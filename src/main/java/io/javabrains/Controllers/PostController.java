@@ -1,11 +1,16 @@
 package io.javabrains.Controllers;
 
+import java.nio.file.attribute.UserPrincipal;
+import java.security.Principal;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -17,8 +22,13 @@ import io.javabrains.Dtos.PostResponse;
 import io.javabrains.Dtos.TagResponseDTO;
 import io.javabrains.Entities.Category;
 import io.javabrains.Entities.Post;
+import io.javabrains.Entities.User;
 import io.javabrains.Repositories.PostRepository;
+import io.javabrains.Repositories.UserRepository;
 import io.javabrains.Services.PostService;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 
 @RestController
 @RequestMapping("api/posts")
@@ -27,6 +37,8 @@ public class PostController {
     private PostService postService;
     @Autowired
     private PostRepository postRepository;
+    @Autowired
+    private UserRepository userRepository;
     @PostMapping
 public ResponseEntity<?> createOrUpdatePost(@RequestBody PostRequestDTO postRequestDTO) {
     try {
@@ -54,6 +66,18 @@ public ResponseEntity<?> createOrUpdatePost(@RequestBody PostRequestDTO postRequ
     }
 }
 
+    @GetMapping("/my-posts")
+    public ResponseEntity<List<Post>>getMyPosts(Principal principal){
+        User user=userRepository.findByUsername(principal.getName()).orElseThrow();
+        List<Post>myPosts=postRepository.findByUsername(user);
+        return ResponseEntity.ok(myPosts);
+
+    }
+    @GetMapping("/feed")
+    public ResponseEntity<List<Post>> getFeed(){
+        List<Post>allPosts=postRepository.findAll();
+        return ResponseEntity.ok(allPosts);
+    }
     @GetMapping("/tags")
     public ResponseEntity<List<TagResponseDTO>>getAllTags(){
         return ResponseEntity.ok(postService.getAllTags());

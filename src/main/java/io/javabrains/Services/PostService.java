@@ -12,6 +12,7 @@ import io.javabrains.Dtos.TagResponseDTO;
 import io.javabrains.Entities.Category;
 import io.javabrains.Entities.Post;
 import io.javabrains.Entities.Tag;
+import io.javabrains.Entities.User;
 import io.javabrains.Repositories.CategoryRepository;
 import io.javabrains.Repositories.PostRepository;
 import io.javabrains.Repositories.TagRepository;
@@ -30,6 +31,7 @@ public class PostService {
         post.setContent(postRequestDTO.getContent());
         post.setStatus(postRequestDTO.getStatus());
         post.setImageOrder(postRequestDTO.getImageOrder());
+       // post.setUser(user);
         Category category = categoryRepository.findByName(postRequestDTO.getCategory())
         .orElseGet(() -> {
             Category newCategory = new Category();

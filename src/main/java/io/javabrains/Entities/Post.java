@@ -37,6 +37,16 @@ public class Post {
     private List<String> imageOrder; 
     @ElementCollection
     private List<String> imageNames = new ArrayList<>();
+    @ManyToOne
+    @JoinColumn(name="user_id",nullable = false)
+     private User user;
+    public User getUser() {
+        return user;
+    }
+
+    public void setUser(User user) {
+        this.user = user;
+    }
 
     // Getters and setters
     public List<String> getImageNames() {
