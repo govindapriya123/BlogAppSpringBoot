@@ -31,7 +31,7 @@ public class SecurityConfig {
                 return config;
             }))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/**").permitAll()  // Public endpoints
+                .requestMatchers("/auth/login","/auth/register").permitAll()  // Public endpoints
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

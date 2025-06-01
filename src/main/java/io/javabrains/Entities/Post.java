@@ -3,8 +3,6 @@ package io.javabrains.Entities;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-
-
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.Size;
 
@@ -23,6 +21,7 @@ public class Post {
    @Size(max=100,message="Title must be less than 100 characters")
    private String title;
    @Lob
+   @Column(name = "content", columnDefinition = "LONGTEXT")
    private String content;
    @ManyToMany
    @JoinTable(
@@ -44,8 +43,8 @@ public class Post {
         return user;
     }
 
-    public void setUser(User user) {
-        this.user = user;
+    public void setUser(User user){
+        this.user=user;
     }
 
     // Getters and setters

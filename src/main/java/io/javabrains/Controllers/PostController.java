@@ -3,6 +3,7 @@ package io.javabrains.Controllers;
 import java.nio.file.attribute.UserPrincipal;
 import java.security.Principal;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,8 +12,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -27,9 +32,6 @@ import io.javabrains.Repositories.PostRepository;
 import io.javabrains.Repositories.UserRepository;
 import io.javabrains.Services.PostService;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
-
 @RestController
 @RequestMapping("api/posts")
 public class PostController {
@@ -42,9 +44,18 @@ public class PostController {
     @PostMapping
 public ResponseEntity<?> createOrUpdatePost(@RequestBody PostRequestDTO postRequestDTO) {
     try {
-        System.out.println("Starting to save the post..."); // Debug log
-
-        Post savedPost = postService.createOrUpdatePost(postRequestDTO);
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        String username;
+        if (principal instanceof UserDetails) {
+            username = ((UserDetails) principal).getUsername();
+        } else if (principal instanceof String) {
+            username = (String) principal;  // When using JWT or basic authentication
+        } else {
+            throw new RuntimeException("Invalid user authentication type");
+        }
+        User user = userRepository.findByUsername(username)
+        .orElseThrow(() -> new RuntimeException("User not found"));
+        Post savedPost = postService.createOrUpdatePost(postRequestDTO,user);
 
         System.out.println("Saved post object: " + savedPost); // Debug log
         if (savedPost == null || savedPost.getId() == null) {
@@ -88,8 +99,12 @@ public ResponseEntity<?> createOrUpdatePost(@RequestBody PostRequestDTO postRequ
     }
     @GetMapping("/auto-save")
     public ResponseEntity<?>autoSavePost(@RequestBody PostRequestDTO postRequestDTO ){
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        String username = ((UserDetails) principal).getUsername();
+        User user = userRepository.findByUsername(username)
+        .orElseThrow(() -> new RuntimeException("User not found"));
         postRequestDTO.setStatus("DRAFT");
-        Post savedPost=postService.createOrUpdatePost(postRequestDTO);
+        Post savedPost=postService.createOrUpdatePost(postRequestDTO, user);
         return ResponseEntity.ok(savedPost);
 
     }
@@ -97,5 +112,15 @@ public ResponseEntity<?> createOrUpdatePost(@RequestBody PostRequestDTO postRequ
     public ResponseEntity<List<Post>> getDrafts(){
         List<Post>drafts=postRepository.findAll().stream().filter(post->"DRAFT".equals(post.getStatus())).collect(Collectors.toList());
         return ResponseEntity.ok(drafts);
+    }
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void>deletePost(@PathVariable Long id){
+        postService.deletePost(id);
+        return ResponseEntity.noContent().build();
+    }
+    @PutMapping("/{id}")
+    public ResponseEntity<Post> updatePost(@PathVariable Long id, @RequestBody PostRequestDTO newPostData,@AuthenticationPrincipal User currentUser) {
+        Post updatedPost=postService.updatePost(id, newPostData,currentUser);
+        return ResponseEntity.ok(updatedPost);
     }
 }

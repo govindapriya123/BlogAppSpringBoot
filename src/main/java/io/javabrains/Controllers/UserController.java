@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -61,43 +62,51 @@ public class UserController {
         }
 	}
 
-    public String saveImage(MultipartFile file,String filename) throws IOException{
-         String UPLOAD_DIR="src/main/resources/static/profile";
-         Path uploadPath=Paths.get(UPLOAD_DIR);
-         String fileName=filename+".jpg";
-         if(!Files.exists(uploadPath)){
+    public String saveImage(MultipartFile file, String filename) throws IOException {
+        String UPLOAD_DIR = System.getProperty("user.dir") + "/uploads/profile"; // Save outside the JAR
+        Path uploadPath = Paths.get(UPLOAD_DIR);
+        String fileName = filename + ".jpg";
+    
+        if (!Files.exists(uploadPath)) {
             Files.createDirectories(uploadPath);
-         }
-         Path filePath=uploadPath.resolve(fileName);
-         Files.copy(file.getInputStream(),filePath,StandardCopyOption.REPLACE_EXISTING);
-         return "/profile/"+fileName;     
+        }
+    
+        Path filePath = uploadPath.resolve(fileName);
+        Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+    
+        return "/uploads/profile/" + fileName;  // Return relative path for frontend
     }
+    
 
-	@PutMapping("/profile")
-public ResponseEntity<?> updateProfile(@ModelAttribute UserProfileRequest request ,
-                                        Principal principal) {
+	@PutMapping(value = "/profile", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+public ResponseEntity<?> updateProfile(
+    @RequestPart(value = "username", required = false) String username,
+    @RequestPart(value = "profilePic", required = false) MultipartFile profilePic,
+    Principal principal) {
     try {
         String currentUsername = principal.getName();
-        User user = userRepository.findByUsername(currentUsername).orElseThrow(() -> new RuntimeException("User not found"));
-        
+        User user = userRepository.findByUsername(currentUsername)
+            .orElseThrow(() -> new RuntimeException("User not found"));
+
+        System.out.println("being called");
+
         // Update username
-        if (request.getUsername() != null) {
-            user.setUsername(request.getUsername());
+        if (username != null) {
+            user.setUsername(username);
         }
 
-        MultipartFile profilePic = request.getProfilePic();
+        // Process profile picture
         if (profilePic != null && !profilePic.isEmpty()) {
             if (!profilePic.getContentType().startsWith("image/")) {
                 return ResponseEntity.badRequest().body("Invalid file type. Only image files are allowed.");
             }
-            String imageUrl=saveImage(profilePic,request.getUsername());
+            String imageUrl = saveImage(profilePic, username);
             user.setProfilePic(imageUrl);
-            
         }
 
         user.setProfileCompleted(true);
         userRepository.save(user);
-        
+
         return ResponseEntity.ok("Profile updated successfully!");
     } catch (Exception e) {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred while updating the profile.");

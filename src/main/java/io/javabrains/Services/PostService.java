@@ -1,6 +1,7 @@
 package io.javabrains.Services;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -25,13 +26,14 @@ public class PostService {
     private TagRepository tagRepository;
     @Autowired
     private CategoryRepository categoryRepository;
-    public Post createOrUpdatePost(PostRequestDTO postRequestDTO){
+    public Post createOrUpdatePost(PostRequestDTO postRequestDTO,User currentUser){
         Post post=new Post();
+        System.out.println("postRequestDTO"+postRequestDTO.getStatus());
         post.setTitle(postRequestDTO.getTitle());
         post.setContent(postRequestDTO.getContent());
         post.setStatus(postRequestDTO.getStatus());
         post.setImageOrder(postRequestDTO.getImageOrder());
-       // post.setUser(user);
+        post.setUser(currentUser);
         Category category = categoryRepository.findByName(postRequestDTO.getCategory())
         .orElseGet(() -> {
             Category newCategory = new Category();
@@ -61,6 +63,42 @@ if (incomingTagIds == null || incomingTagIds.isEmpty()) {
     }
     public List<Category>getAllCategories(){
         return categoryRepository.findAll();
+    }
+    public void deletePost(Long id){
+        postRepository.deleteById(id);
+    }
+    public Post updatePost(Long id,PostRequestDTO postRequestDTO,User currUser){
+       Post post=postRepository.findById(id).orElseThrow(()->new RuntimeException("Post not found with id "+id));
+       if(!post.getUser().getId().equals(currUser.getId())){
+        throw new RuntimeException("You are not authorised to update the post.");
+       }
+       post.setTitle(postRequestDTO.getTitle());
+       post.setContent(postRequestDTO.getContent());
+       post.setStatus(postRequestDTO.getStatus());
+       post.setImageOrder(postRequestDTO.getImageOrder());
+
+       // Update category
+       Category category = categoryRepository.findByName(postRequestDTO.getCategory())
+               .orElseGet(() -> {
+                   Category newCategory = new Category();
+                   newCategory.setName(postRequestDTO.getCategory());
+                   return categoryRepository.save(newCategory);
+               });
+       post.setCategory(category);
+
+       // Update tags
+       List<Long> incomingTagIds = postRequestDTO.getTagIds();
+       if (incomingTagIds != null && !incomingTagIds.isEmpty()) {
+           List<Tag> tags = tagRepository.findAllById(incomingTagIds);
+           post.setTags(tags);
+       } else {
+           post.setTags(Collections.emptyList()); // Reset tags if empty
+       }
+
+       // Update timestamp
+       post.setLastSaved(LocalDateTime.now());
+
+       return postRepository.save(post);
     }
     
 }

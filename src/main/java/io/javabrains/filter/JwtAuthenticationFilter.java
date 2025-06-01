@@ -33,15 +33,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws ServletException, IOException {
         try {
-            String authHeader=request.getHeader("Authorization");
-            if(authHeader==null||!authHeader.startsWith("Bearer")){
+            String authHeader = request.getHeader("Authorization");
+            if (authHeader == null || !authHeader.startsWith("Bearer")) {
                 chain.doFilter(request, response);
                 return;
             }
-            String token=authHeader.substring(7);
-
+    
+            String token = authHeader.substring(7);
             String path = request.getRequestURI();
-            System.out.println("Request URI: " + request.getRequestURI());
+            System.out.println("Request URI: " + path);
+    
             if (path.startsWith("/auth/")) {
                 chain.doFilter(request, response);  // Skip JWT validation for /auth/ paths
                 return;
@@ -50,29 +51,35 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             if (token != null) {
                 String username = jwtUtil.extractUsername(token);
                 System.out.println("Username extracted: " + username);
-                if(username!=null&&SecurityContextHolder.getContext().getAuthentication()==null){
-                if (jwtUtil.isTokenValid(token, username)) {
-                    User userDetails = userRepository.findByUsername(username).orElse(null);
-                    if (userDetails != null) {
-                        UsernamePasswordAuthenticationToken authentication = 
-                            new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-                        authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                        SecurityContextHolder.getContext().setAuthentication(authentication);
+    
+                if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                    if (jwtUtil.isTokenValid(token, username)) {
+                        User userDetails = userRepository.findByUsername(username).orElse(null);
+                        if (userDetails != null) {
+                            UsernamePasswordAuthenticationToken authentication =
+                                    new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                            authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                            SecurityContextHolder.getContext().setAuthentication(authentication);
+                        }
                     }
                 }
             }
-            }
+    
+            chain.doFilter(request, response);  // Ensure this is only called once
+    
         } catch (ExpiredJwtException e) {
             handleException(response, HttpServletResponse.SC_UNAUTHORIZED, "Token has expired");
+            return; // Stop further processing
         } catch (MalformedJwtException e) {
             handleException(response, HttpServletResponse.SC_BAD_REQUEST, "Malformed token");
+            return;
         } catch (io.jsonwebtoken.security.SecurityException e) {
             handleException(response, HttpServletResponse.SC_UNAUTHORIZED, "Invalid token signature");
+            return;
         } catch (Exception e) {
             handleException(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "An error occurred while processing the token");
+            return;
         }
-    
-        chain.doFilter(request, response);
     }
     
     private void handleException(HttpServletResponse response, int status, String message) throws IOException {
