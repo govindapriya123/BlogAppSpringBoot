@@ -62,6 +62,7 @@ public class AuthenticationController {
          Map<String, Object> response = new HashMap<>();
         response.put("token", token);
         response.put("profileCompleted", user.isProfileCompleted());
+        response.put("user",user);
 
         return ResponseEntity.ok(response);
 

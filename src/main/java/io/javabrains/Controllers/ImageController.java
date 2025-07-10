@@ -23,6 +23,7 @@ import org.springframework.web.server.ResponseStatusException;
 import io.javabrains.Entities.Post;
 import io.javabrains.Repositories.PostRepository;
 
+
 @RestController
 @RequestMapping("/api/images")
 public class ImageController {
@@ -32,6 +33,8 @@ public class ImageController {
     @PostMapping("/upload")
     public ResponseEntity<String>uploadImage(@RequestParam("images")MultipartFile[] images, @RequestParam("postId") Long postId){
         List<String>imageNames=new ArrayList<>();
+        Post existingPost = postRepository.findById(postId)
+        .orElseThrow(() -> new RuntimeException("Post not found with ID: " + postId));
         Arrays.stream(images).forEach(file -> {
             try {
                 // Generate a unique filename using UUID
@@ -41,19 +44,13 @@ public class ImageController {
                 Path path = Paths.get(UPLOAD_DIR + "/" + uniqueFileName);
                 Files.copy(file.getInputStream(), path, StandardCopyOption.REPLACE_EXISTING);
                 imageNames.add(uniqueFileName);
-                Post existingPost = postRepository.findById(postId)
-                .orElseThrow(() -> new RuntimeException("Post not found with ID: " + postId));
-                existingPost.setImageNames(imageNames);
-                postRepository.save(existingPost);
             } catch (IOException e) {
                 e.printStackTrace();
                 throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "File upload failed");
             }
         });
-         Post post = postRepository.findById(postId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Post not found"));
-        post.setImageNames(imageNames);
-        postRepository.save(post);
+        existingPost.setImageNames(imageNames);
+        postRepository.save(existingPost);
         return ResponseEntity.ok("Files uploaded successfully: " + String.join(", ", imageNames));
     }
     private String getFileExtension(String fileName) {
