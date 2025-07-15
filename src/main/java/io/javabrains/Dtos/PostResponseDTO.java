@@ -2,7 +2,10 @@ package io.javabrains.Dtos;
 
 import java.util.List;
 
-public class PostRequestDTO {
+import io.javabrains.Entities.Post;
+
+public class PostResponseDTO {
+    private Long id;
     private String title;
     private String content;
     private List<Long>tagIds;
@@ -10,7 +13,21 @@ public class PostRequestDTO {
     private List<String>imageOrder;
     private String status; //DRAFT or published
     private boolean bookmarked;
-    public PostRequestDTO(){}
+     public PostResponseDTO(Post post, boolean bookmarked) {
+        this.id = post.getId();
+        this.title = post.getTitle();
+        this.content = post.getContent();
+        this.bookmarked = bookmarked;
+    }
+    public PostResponseDTO(Long postId) {
+        this.id=postId;
+    }
+    public Long getId(){
+        return id;
+    }
+    public void setId(Long id){
+        this.id=id;
+    }
     public String getTitle() {
         return title;
     }

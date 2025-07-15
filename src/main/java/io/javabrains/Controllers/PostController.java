@@ -25,11 +25,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import io.javabrains.Dtos.PostRequestDTO;
-import io.javabrains.Dtos.PostResponse;
+
+import io.javabrains.Dtos.PostResponseDTO;
 import io.javabrains.Dtos.TagResponseDTO;
 import io.javabrains.Entities.Category;
 import io.javabrains.Entities.Post;
 import io.javabrains.Entities.User;
+import io.javabrains.Repositories.BookmarkRepository;
 import io.javabrains.Repositories.PostRepository;
 import io.javabrains.Repositories.UserRepository;
 import io.javabrains.Services.PostService;
@@ -44,6 +46,8 @@ public class PostController {
     private PostRepository postRepository;
     @Autowired
     private UserRepository userRepository;
+    @Autowired
+    private BookmarkRepository bookmarkRepository;
 
     @PostMapping
     public ResponseEntity<?> createOrUpdatePost(@RequestBody PostRequestDTO postRequestDTO) {
@@ -69,7 +73,7 @@ public class PostController {
             Long postId = savedPost.getId();
             System.out.println("Saved Post ID: " + postId); // Debug log
 
-            return ResponseEntity.ok(new PostResponse(postId));
+            return ResponseEntity.ok(new PostResponseDTO(postId));
         } catch (Exception e) {
             System.err.println("Error occurred: " + e.getMessage()); // Debug log
             e.printStackTrace();
@@ -89,9 +93,16 @@ public class PostController {
     }
 
     @GetMapping("/feed")
-    public ResponseEntity<List<Post>> getFeed() {
+    public ResponseEntity<List<PostResponseDTO>> getFeed(Principal principal) {
+        User user=userRepository.findByUsername(principal.getName()).orElseThrow();
         List<Post> allPosts = postRepository.findAll();
-        return ResponseEntity.ok(allPosts);
+        List<PostResponseDTO>response=allPosts.stream().map(post->{
+            boolean isBookmarked=bookmarkRepository.existsByUserAndPost(user,post);
+            return new PostResponseDTO(post,isBookmarked);
+
+        })
+        .collect(Collectors.toList());
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/tags")
