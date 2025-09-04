@@ -1,38 +1,26 @@
 package io.javabrains.Dtos;
 
-public class ProfileUpdateRequest {
-    private String username;
-    private String profilePic;
+import java.time.LocalDate;
+
+public class UserProfileDTO {
     private String phone;
-    private String dob;
-    private String bio;
+    private LocalDate dob;
     private String gender;
     private String location;
-    private String email;
-
+    private String bio;
+    private boolean profileCompleted;
+    private String profilePic;
     public String getPhone() {
         return phone;
-    }
-    public String getEmail() {
-        return email;
-    }
-    public void setEmail(String email) {
-        this.email = email;
     }
     public void setPhone(String phone) {
         this.phone = phone;
     }
-    public String getDob() {
+    public LocalDate getDob() {
         return dob;
     }
-    public void setDob(String dob) {
+    public void setDob(LocalDate dob) {
         this.dob = dob;
-    }
-    public String getBio() {
-        return bio;
-    }
-    public void setBio(String bio) {
-        this.bio = bio;
     }
     public String getGender() {
         return gender;
@@ -46,11 +34,17 @@ public class ProfileUpdateRequest {
     public void setLocation(String location) {
         this.location = location;
     }
-    public String getUsername() {
-        return username;
+    public String getBio() {
+        return bio;
     }
-    public void setUsername(String username) {
-        this.username = username;
+    public void setBio(String bio) {
+        this.bio = bio;
+    }
+    public boolean isProfileCompleted() {
+        return profileCompleted;
+    }
+    public void setProfileCompleted(boolean profileCompleted) {
+        this.profileCompleted = profileCompleted;
     }
     public String getProfilePic() {
         return profilePic;

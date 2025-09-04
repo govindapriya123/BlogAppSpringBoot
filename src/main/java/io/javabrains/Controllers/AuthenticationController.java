@@ -9,9 +9,13 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import io.javabrains.Dtos.LoginResponse;
+import io.javabrains.Dtos.UserDTO;
 import io.javabrains.Entities.User;
 import io.javabrains.Repositories.UserRepository;
 import io.javabrains.Utilities.JwtUtil;
+import io.javabrains.Utilities.UserMapper;
 
 @RestController
 @RequestMapping("/auth")
@@ -59,10 +63,9 @@ public class AuthenticationController {
             return ResponseEntity.status(401).body("Invalid Credentials");
         }
         String token=jwtUtil.generateToken(user.getUsername());
-         Map<String, Object> response = new HashMap<>();
-        response.put("token", token);
-        response.put("profileCompleted", user.isProfileCompleted());
-        response.put("user",user);
+        UserDTO userDTO=UserMapper.toUserDTO(user);
+        System.out.println("userDTO"+userDTO);
+        LoginResponse response=new LoginResponse(token, userDTO,"Login successful");
 
         return ResponseEntity.ok(response);
 

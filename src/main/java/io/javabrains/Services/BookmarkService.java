@@ -1,6 +1,7 @@
 package io.javabrains.Services;
 
 import java.util.List;
+import java.util.Objects;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -27,7 +28,7 @@ public class BookmarkService {
         bookmarkRepository.findByUserAndPost(user,post).ifPresent(bookmarkRepository::delete);
     }
     public List<Post>getBookmarkedPosts(User user){
-        return bookmarkRepository.findByUser(user).stream().map(Bookmark::getPost).toList();
+        return bookmarkRepository.findByUser(user).stream().map(Bookmark::getPost).filter(Objects::nonNull).toList();
     }
     
 }

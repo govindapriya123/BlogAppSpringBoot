@@ -6,9 +6,11 @@ import java.util.Collections;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
+import jakarta.persistence.OneToOne;
 
 @Entity
 public class User implements UserDetails {
@@ -21,6 +23,8 @@ public class User implements UserDetails {
 	private String password;
 	private boolean profileCompleted=false;
 	private String profilePic;
+	@OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private UserProfile profile;
 	public String getProfilePic() {
         return profilePic;
     }
@@ -80,5 +84,16 @@ public class User implements UserDetails {
     @Override
     public boolean isEnabled() {
         return true;
+    }
+
+	public UserProfile getProfile() {
+        return profile;
+    }
+
+	public void setProfile(UserProfile profile) {
+        this.profile = profile;
+        if (profile != null) {
+            profile.setUser(this);
+        }
     }
 }

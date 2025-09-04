@@ -9,6 +9,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.security.Principal;
+import java.time.LocalDate;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -24,10 +26,14 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import io.javabrains.Dtos.LoginRequest;
+import io.javabrains.Dtos.LoginResponse;
+import io.javabrains.Dtos.ProfileUpdateRequest;
+import io.javabrains.Dtos.UserDTO;
 import io.javabrains.Dtos.UserProfileRequest;
 import io.javabrains.Entities.User;
 import io.javabrains.Repositories.UserRepository;
 import io.javabrains.Services.UserService;
+import io.javabrains.Utilities.UserMapper;
 
 @RestController
 @RequestMapping("/api/users")
@@ -50,16 +56,22 @@ public class UserController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<User> login(@RequestBody LoginRequest loginRequest) {
-        System.out.println("username" + loginRequest.getUsername());
-        System.out.println("email" + loginRequest.getEmail());
-        System.out.println("password" + loginRequest.getPassword());
+    public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest loginRequest) {
+        System.out.println("username: " + loginRequest.getUsername());
+        System.out.println("email: " + loginRequest.getEmail());
+        System.out.println("password: " + loginRequest.getPassword());
+
         User user = userService.login(loginRequest.getUsername(), loginRequest.getPassword());
+
         if (user != null) {
             System.out.println("User found: " + user.getUsername());
-            return new ResponseEntity<>(user, HttpStatus.OK);
+            UserDTO userDTO =UserMapper.toUserDTO(user);
+            System.out.println("userDTO"+userDTO);
+
+            return ResponseEntity.ok(new LoginResponse("Login successful", userDTO));
         } else {
-            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(new LoginResponse("Invalid credentials", null));
         }
     }
 
@@ -77,41 +89,4 @@ public class UserController {
 
         return "/uploads/profile/" + fileName; // Return relative path for frontend
     }
-
-    @PutMapping(value = "/profile", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<?> updateProfile(
-            @RequestPart(value = "username", required = false) String username,
-            @RequestPart(value = "profilePic", required = false) MultipartFile profilePic,
-            Principal principal) {
-        try {
-            String currentUsername = principal.getName();
-            User user = userRepository.findByUsername(currentUsername)
-                    .orElseThrow(() -> new RuntimeException("User not found"));
-
-            System.out.printf("being called",username);
-
-            // Update username
-            if (username != null) {
-                user.setUsername(username);
-            }
-
-            // Process profile picture
-            if (profilePic != null && !profilePic.isEmpty()) {
-                if (!profilePic.getContentType().startsWith("image/")) {
-                    return ResponseEntity.badRequest().body("Invalid file type. Only image files are allowed.");
-                }
-                String imageUrl = saveImage(profilePic, username);
-                user.setProfilePic(imageUrl);
-            }
-
-            user.setProfileCompleted(true);
-            userRepository.save(user);
-
-            return ResponseEntity.ok("Profile updated successfully!");
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("An error occurred while updating the profile.");
-        }
-    }
-
 }

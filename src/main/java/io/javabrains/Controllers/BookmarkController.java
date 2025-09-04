@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import io.javabrains.Dtos.BookmarkRequest;
+import io.javabrains.Dtos.PostResponseDTO;
 import io.javabrains.Entities.Bookmark;
 import io.javabrains.Entities.Post;
 import io.javabrains.Entities.User;
@@ -54,10 +55,13 @@ public class BookmarkController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Post>> getBookmarks(){
+    public ResponseEntity<List<PostResponseDTO>> getBookmarks(){
         User user=getCurrentUser();
         List<Post>bookmarkedPosts=bookmarkService.getBookmarkedPosts(user);
-        return ResponseEntity.ok(bookmarkedPosts);
+        List<PostResponseDTO>response=bookmarkedPosts.stream().map(post->new PostResponseDTO(post,true)).toList();
+        System.out.println("Bookmarks for user " + user.getUsername() + ": " + bookmarkedPosts.size());
+        System.out.println("bookmarkedPosts"+bookmarkedPosts);
+        return ResponseEntity.ok(response);
         
     }
 
